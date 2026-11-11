@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LigaMagic - Captura local</title>
+  <link rel="stylesheet" href="popup.css">
+  <script type="module" src="popup.mjs"></script>
+</head>
+<body>
+  <header>
+    <div class="identity"><img src="assets/layers-2.svg" alt="" width="26" height="26"><div><h1>LigaMagic</h1><span>Captura local &middot; independente</span></div></div>
+    <span id="count" class="count">0 cartas</span>
+  </header>
+  <main>
+    <aside id="memory-warning" class="memory-warning" role="alert" aria-atomic="true" hidden></aside>
+    <section class="capture" aria-label="Captura">
+      <div class="tabs" role="tablist" aria-label="Modo de captura">
+        <button id="tab-manual" role="tab" aria-selected="true" aria-controls="manual-panel">Carta aberta</button>
+        <button id="tab-batch" role="tab" aria-selected="false" aria-controls="batch-panel" tabindex="-1">Lista de cartas</button>
+      </div>
+      <div class="capture-options query-options">
+        <label><input id="normal" type="checkbox">Somente Normal</label>
+        <label class="batch-only"><input id="collection-mode" type="checkbox" role="switch">Consulta de cole&ccedil;&atilde;o</label>
+        <label class="batch-only"><input id="batch-refresh" type="checkbox">Atualizar pre&ccedil;os</label>
+        <span class="manual-only">Edic&otilde;es especiais inclu&iacute;das</span>
+      </div>
+      <div id="manual-panel" role="tabpanel" aria-labelledby="tab-manual">
+        <button id="capture" class="primary" disabled><img src="assets/plus.svg" alt="">Capturar carta</button>
+      </div>
+      <div id="batch-panel" role="tabpanel" aria-labelledby="tab-batch" hidden>
+        <label class="field-label" for="batch-text">Cartas e quantidades</label>
+        <textarea id="batch-text" rows="3" spellcheck="false" placeholder="4 Lightning Bolt&#10;Eternal Witness"></textarea>
+        <div id="commander-field" class="commander-field">
+          <label class="field-label" for="batch-commander">Comandante / parceiros (opcional)</label>
+          <input id="batch-commander" type="text" spellcheck="false" placeholder="Thrasios, Triton Hero + Tymna the Weaver">
+        </div>
+        <div class="batch-settings">
+          <button id="import-list"><img src="assets/upload.svg" alt="">Importar CSV / TXT</button>
+          <input id="list-file" type="file" accept=".csv,text/csv,.txt,text/plain" hidden>
+          <label for="batch-interval">Intervalo (s)<input id="batch-interval" type="number" min="3" max="300" step="0.1" value="4" required></label>
+        </div>
+        <p id="collection-summary" class="collection-meta" hidden></p>
+        <p id="collection-basis" class="collection-meta" hidden>Base: menor pre&ccedil;o por nome, sem ajuste por edi&ccedil;&atilde;o, acabamento, idioma ou estado. Sem frete; n&atilde;o representa oferta de recompra.</p>
+        <div class="batch-actions">
+          <button id="batch-start" class="primary"><img src="assets/play.svg" alt="">Iniciar lista</button>
+          <button id="batch-pause" class="icon-button" title="Pausar lista" aria-label="Pausar lista" hidden><img src="assets/pause.svg" alt=""></button>
+          <button id="batch-resume" title="Retomar carta atual" hidden><img src="assets/play.svg" alt="">Retomar</button>
+          <button id="batch-retry" title="Retentar somente cartas pendentes" hidden><img src="assets/play.svg" alt="">Retentar pend&ecirc;ncias</button>
+          <button id="batch-skip" class="icon-button" title="Pular carta atual" aria-label="Pular carta atual" hidden><img src="assets/skip-forward.svg" alt=""></button>
+          <button id="batch-tab" class="icon-button" title="Abrir aba da lista" aria-label="Abrir aba da lista" hidden><img src="assets/external-link.svg" alt=""></button>
+          <button id="batch-cancel" class="icon-button danger" title="Cancelar consultas restantes" aria-label="Cancelar consultas restantes" hidden><img src="assets/square.svg" alt=""></button>
+        </div>
+        <div id="batch-progress" hidden>
+          <progress id="batch-meter" max="1" value="0" aria-label="Progresso da lista"></progress>
+          <p id="batch-state" role="status" aria-live="polite"></p>
+          <div class="batch-report"><strong id="batch-total"></strong><button id="batch-export" class="icon-button" title="Exportar relatorio da lista" aria-label="Exportar relatorio da lista"><img src="assets/download.svg" alt=""></button></div>
+          <div id="batch-errors" role="log" aria-label="Pendencias da lista"></div>
+        </div>
+      </div>
+      <p id="status" role="status" aria-live="polite">Carregando capturas&hellip;</p>
+    </section>
+    <section class="collection" aria-label="Cartas capturadas">
+      <div class="table-heading"><span>Carta / edi&ccedil;&atilde;o</span><span>Qtd.</span><span>Subtotal</span><span></span></div>
+      <div id="items" class="items"></div>
+      <div id="empty" class="empty"><img src="assets/layers-2.svg" alt="" width="36" height="36"><h2>Nenhuma carta capturada</h2><span>Total da lista: R$ 0,00</span></div>
+    </section>
+  </main>
+  <footer>
+    <div class="summary"><div><span id="total-label">Total capturado</span><small id="units">0 unidades &middot; sem frete</small></div><strong id="total">R$ 0,00</strong></div>
+    <div class="actions"><button id="export" class="export" disabled><img src="assets/download.svg" alt=""><span id="export-label">Exportar Excel</span></button><button id="clear" class="icon-button danger" title="Limpar lista" aria-label="Limpar lista" disabled><img src="assets/trash-2.svg" alt=""></button></div>
+  </footer>
+  <dialog id="clear-dialog" aria-labelledby="clear-title">
+    <h2 id="clear-title">Limpar todas as capturas?</h2>
+    <p>Os arquivos j&aacute; exportados ser&atilde;o mantidos.</p>
+    <div class="dialog-actions"><button id="cancel-clear">Cancelar</button><button id="confirm-clear" class="destructive">Limpar lista</button></div>
+  </dialog>
+</body>
+</html>
