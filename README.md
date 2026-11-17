@@ -183,9 +183,11 @@ A interface bloqueia alterações incompatíveis com uma consulta em andamento. 
 1. Selecione **Lista de cartas** e mantenha **Consulta de coleção** desativada.
 2. Digite uma carta por linha ou use **Importar CSV / TXT**.
 3. Informe o comandante ou os parceiros, quando aplicável.
-4. Ajuste o intervalo. Marque **Atualizar preços** para ignorar cotações de preço já armazenadas no cache.
+4. Ajuste o intervalo. Marque **Atualizar preços** para ignorar cotações de preço já armazenadas no cache. Quando houver uma captura anterior da carta, a lista exibirá **Relatório de preços** com apenas as cartas cujo valor mudou.
 5. Clique em **Iniciar lista** e acompanhe a aba aberta pela extensão.
 6. Resolva eventuais verificações, retome ou retente as pendências e exporte a lista.
+
+O relatório de alterações é um arquivo Excel separado com as colunas **Nome da carta**, **Preço antigo**, **Preço atualizado** e **Diferença**. Reduções aparecem em verde e aumentos em vermelho.
 
 ### Estimar uma coleção
 

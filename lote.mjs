@@ -401,6 +401,22 @@ export function criarControlador(api, agora = Date.now, enriquecer = enriquecerC
       const deck = porVariante ? { itens: prepararColecao(dados.colecao.variantes), comandantes: [] }
         : prepararListaDeck(dados.texto, dados.colecao ? "" : dados.comandante, Boolean(dados.colecao || dados.importacaoCsv));
       const { itens, comandantes } = deck;
+      if (dados.atualizarPrecos) {
+        const { capturas = [] } = await api.storage.local.get("capturas");
+        const anteriores = lote?.itens || [];
+        for (const item of itens) {
+          const captura = !porVariante && capturas.find((entrada) => entrada.centavos > 0
+            && (Boolean(entrada.somenteNormal) === Boolean(dados.somenteNormal))
+            && (entrada.id === normalizarNome(item.nome)
+              || [entrada.nome, entrada.nomePt].filter(Boolean).some((nome) => nomesEquivalentes(nome, item.nome))));
+          const anterior = anteriores.find((entrada) => entrada.status === "ok"
+            && (porVariante ? entrada.idColecao === item.idColecao
+              : !lote?.colecao?.criterios && lote?.somenteNormal === Boolean(dados.somenteNormal)
+                && nomesEquivalentes(entrada.nome, item.nome)))?.cotacao;
+          const centavos = captura?.centavos ?? anterior?.centavos;
+          if (Number.isSafeInteger(centavos) && centavos > 0) item.precoAnterior = centavos;
+        }
+      }
       const intervalo = Number(dados.intervalo ?? 4);
       if (!Number.isFinite(intervalo) || intervalo < 3 || intervalo > 300) throw new Error("Intervalo deve estar entre 3 e 300 segundos.");
       if (!await api.permissions.contains({ origins: ORIGENS })) throw new Error("Autorize o acesso a LigaMagic para consultar a lista.");

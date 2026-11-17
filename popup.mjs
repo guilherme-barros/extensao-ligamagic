@@ -1,5 +1,5 @@
 import { capturarPagina, extrairCotacao, adicionarCaptura, totalCentavos, reais, interpretarLista, prepararListaDeck, foraDoTotalDeck, importarCsvColecao, prepararColecao, resumirColecao } from "./core.mjs";
-import { gerarExcel, gerarExcelLote, gerarExcelColecao } from "./excel.mjs";
+import { gerarExcel, gerarExcelLote, gerarExcelColecao, gerarExcelRelatorioPrecos } from "./excel.mjs";
 import { ORIGENS_IMAGENS } from "./imagens.mjs";
 import { ORIGENS_CONSULTA, loteAberto } from "./lote.mjs";
 import { enriquecerCotacao, ORIGENS_TAGGER } from "./tagger.mjs";
@@ -7,7 +7,7 @@ import { verificarMemoria } from "./memoria.mjs";
 
 const elementos = Object.fromEntries(["capture", "normal", "status", "memory-warning", "count", "items", "empty", "total", "total-label", "units", "export", "export-label", "clear", "clear-dialog", "cancel-clear", "confirm-clear"]
   .map((id) => [id, document.getElementById(id)]));
-const lista = Object.fromEntries(["tab-manual", "tab-batch", "manual-panel", "batch-panel", "batch-text", "batch-commander", "commander-field", "import-list", "list-file", "collection-mode", "collection-summary", "collection-basis", "batch-interval", "batch-refresh", "batch-start", "batch-pause", "batch-resume", "batch-retry", "batch-skip", "batch-tab", "batch-cancel", "batch-progress", "batch-meter", "batch-state", "batch-total", "batch-export", "batch-errors"]
+const lista = Object.fromEntries(["tab-manual", "tab-batch", "manual-panel", "batch-panel", "batch-text", "batch-commander", "commander-field", "import-list", "list-file", "collection-mode", "collection-summary", "collection-basis", "batch-interval", "batch-refresh", "batch-start", "batch-pause", "batch-resume", "batch-retry", "batch-skip", "batch-tab", "batch-cancel", "batch-progress", "batch-meter", "batch-state", "batch-total", "batch-export", "batch-price-export", "batch-errors"]
   .map((id) => [id, document.getElementById(id)]));
 let capturas = [];
 let lote = null;
@@ -142,6 +142,13 @@ function renderizar() {
   renderizarLote();
 }
 
+function alteracoesPreco(lote) {
+  return (lote?.itens || []).flatMap((item) => item.status === "ok" && Number.isSafeInteger(item.precoAnterior)
+      && Number.isSafeInteger(item.cotacao?.centavos) && item.precoAnterior !== item.cotacao.centavos
+    ? [{ nome: item.nome, precoAnterior: item.precoAnterior, precoAtualizado: item.cotacao.centavos }]
+    : []);
+}
+
 function renderizarLote() {
   const aberto = loteAberto(lote);
   const pausado = lote?.fase === "pausado";
@@ -162,6 +169,10 @@ function renderizarLote() {
   lista["batch-tab"].hidden = !lote?.abaId;
   for (const id of ["batch-pause", "batch-resume", "batch-retry", "batch-skip", "batch-cancel", "batch-tab"]) lista[id].disabled = ocupado;
   lista["batch-progress"].hidden = !lote;
+  const alteracoes = alteracoesPreco(lote);
+  lista["batch-price-export"].hidden = !lote?.atualizarPrecos || !alteracoes.length;
+  lista["batch-price-export"].disabled = ocupado;
+  lista["batch-price-export"].textContent = `Relatório de preços (${alteracoes.length})`;
   const origem = aberto ? lote.colecao : colecao;
   lista["collection-summary"].hidden = !origem && !consultaColecao;
   lista["collection-basis"].hidden = !consultaColecao && !lote?.colecao;
@@ -388,6 +399,12 @@ lista["batch-export"].addEventListener("click", () => executar(async () => {
   const opcoes = await prepararGaleria();
   baixarExcel(await (lote.colecao ? gerarExcelColecao(lote, opcoes) : gerarExcelLote(lote, opcoes)), lote.colecao ? "ligamagic-colecao-" : "ligamagic-lista-");
   mensagem("Relatorio Excel da lista exportado.", "success");
+}));
+
+lista["batch-price-export"].addEventListener("click", () => executar(async () => {
+  const alteracoes = alteracoesPreco(lote);
+  baixarExcel(await gerarExcelRelatorioPrecos(alteracoes), "ligamagic-alteracoes-precos-");
+  mensagem("Relatorio de alteracoes de precos exportado.", "success");
 }));
 
 elementos.clear.addEventListener("click", () => {

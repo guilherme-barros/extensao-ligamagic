@@ -227,3 +227,37 @@ export function gerarExcelColecao(lote, opcoes = {}) {
     edicao: item.edicao || item.cotacao?.edicao,
   })), opcoes);
 }
+
+export async function gerarExcelRelatorioPrecos(alteracoes) {
+  if (!Array.isArray(alteracoes) || alteracoes.some((item) => !item.nome
+      || !Number.isSafeInteger(item.precoAnterior) || !Number.isSafeInteger(item.precoAtualizado)
+      || item.precoAnterior <= 0 || item.precoAtualizado <= 0 || item.precoAnterior === item.precoAtualizado)) {
+    throw new Error("Dados invalidos para o relatorio de alteracoes de precos.");
+  }
+  const arquivo = new globalThis.ExcelJS.Workbook();
+  const planilha = arquivo.addWorksheet("Alteracoes de precos");
+  planilha.addTable({
+    name: "TabelaAlteracoesPrecos",
+    ref: "A1",
+    headerRow: true,
+    totalsRow: false,
+    style: { theme: "TableStyleMedium2", showRowStripes: true, showColumnStripes: false },
+    columns: ["Nome da carta", "Preço antigo", "Preço atualizado", "Diferença"]
+      .map((name) => ({ name, filterButton: true })),
+    rows: alteracoes.map((item) => [
+      item.nome,
+      item.precoAnterior / 100,
+      item.precoAtualizado / 100,
+      (item.precoAtualizado - item.precoAnterior) / 100,
+    ]),
+  });
+  planilha.getColumn(1).width = Math.min(60, Math.max(20, ...alteracoes.map((item) => item.nome.length + 2)));
+  for (const coluna of [2, 3, 4]) planilha.getColumn(coluna).width = 20;
+  for (const coluna of [2, 3]) planilha.getColumn(coluna).numFmt = '"R$" #,##0.00';
+  planilha.getColumn(4).numFmt = '"R$" #,##0.00;-"R$" #,##0.00';
+  for (const [indice, item] of alteracoes.entries()) {
+    planilha.getCell(indice + 2, 4).font = { color: { argb: item.precoAtualizado < item.precoAnterior ? "FF008000" : "FFFF0000" } };
+  }
+  planilha.views = [{ state: "frozen", ySplit: 1 }];
+  return new Uint8Array(await arquivo.xlsx.writeBuffer());
+}
